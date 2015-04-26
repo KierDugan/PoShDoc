@@ -1,8 +1,27 @@
 ##
-## PoShWarp README documentation generator
-## URL: https://github.com/DuFace/PoShWarp
-## Copyright (c) 2014 Kier Dugan
+## PoShDoc: Simply PowerShell module README documentation generator
+## URL: https://github.com/DuFace/PoShDoc
+## Copyright (c) 2014-2015 Kier Dugan
 ##
+
+[CmdletBinding(PositionalBinding=$false)]
+param(
+    [Parameter(Mandatory=$true)]
+    [ValidateScript({ Test-Path -Path $_ -PathType Leaf })]
+    [String]
+    $TemplateFile,
+
+    [Parameter(Mandatory=$false)]
+    [String]
+    $OutputFile,
+
+    [Parameter(Mandatory=$false)]
+    [Alias("Module")]
+    [ValidateScript({ Test-Path -Path $_ -PathType Leaf })]
+    [String[]]
+    $Modules
+)
+
 
 ## Table Descriptors -----------------------------------------------------------
 function HeaderCell {
@@ -253,11 +272,13 @@ function ConvertCommandHelp($help) {
 
 ## Actual documentation generator ----------------------------------------------
 
-# Import the current version of the module
-Import-Module .\PoShWarp.psm1 -Force
+# Import all the modules to document
+foreach ($mod in $Modules) {
+    Import-Module $mod -Force
+}
 
 # Load the template file
-$srcdoc = Get-Content .\README.md.in
+$srcdoc = Get-Content $TemplateFile
 
 # Magic callback that does the munging
 $callback = {
@@ -266,5 +287,14 @@ $callback = {
 $re = [Regex]"{%\s*([\w\-]+)\s*%}"
 
 # Generate the readme
-$srcdoc | foreach { $re.Replace($_, $callback) } > README.md
+$readme = $srcdoc | foreach { $re.Replace($_, $callback) }
+
+# Output to the appropriate stream
+if ($OutputFile) {
+    $OutputFile = Join-Path (Get-Location) $OutputFile
+    $utf8Encoding = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllLines($OutputFile, $readme, $utf8Encoding)
+} else {
+    $readme | Out-Host
+}
 
