@@ -345,9 +345,15 @@ $srcdoc = Get-Content $TemplateFile
 
 # Magic callback that does the munging
 $callback = {
-    ConvertCommandHelp (Get-Help $args[0].Groups[1].Value)
+    if ($args[0].Groups[0].Value.StartsWith('\')) {
+        # Escaped tag; strip escape character and return
+        $args[0].Groups[0].Value.Remove(0, 1)
+    } else {
+        # Look up the help and generate the Markdown
+        ConvertCommandHelp (Get-Help $args[0].Groups[1].Value)
+    }
 }
-$re = [Regex]"{%\s*(.*?)\s*%}"
+$re = [Regex]"\\?{%\s*(.*?)\s*%}"
 
 # Generate the readme
 $readme = $srcdoc | foreach { $re.Replace($_, $callback) }
