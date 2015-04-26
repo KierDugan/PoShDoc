@@ -258,12 +258,32 @@ function Format-MarkdownTable {
 function ConvertCommandHelp($help) {
     $doc = ""
 
+    # If the command name is a script, strip off the path
+    $cmdName = if ($help.Name -like "*.ps1") {
+        (Get-Item $help.Name).Name
+    } else {
+        $help.Name
+    }
+
+    # Tidy up the syntax line to make it fit on one line
+    $cmdSyntax = ($help.syntax | Out-String).Trim()
+    $cmdSyntax = $cmdSyntax.Replace("`r", "")
+    $cmdSyntax = $cmdSyntax.Replace("`n", "")
+
+    # If the command is a script, swap the command name with the scriptname
+    if ($help.Name -like "*.ps1") {
+        $cmdSyntax = $cmdSyntax.Replace($help.Name, $cmdName)
+    }
+
+    # Generate a sane slug for the anchor tag
+    $cmdSlug = $cmdName -replace '\W+','-'
+
     # Open with an anchor, sub-heading, and synopsis
-    $doc += "<a id=`"$($help.Name)`"></a>`r`n"
-    $doc += "## $($help.Name)`r`n"
+    $doc += "<a id=`"$cmdSlug`"></a>`r`n"
+    $doc += "## $cmdName`r`n"
     $doc += "`r`n"
     $doc += '```' + "`r`n"
-    $doc += ($help.syntax | Out-String).Trim() + "`r`n"
+    $doc += "$cmdSyntax`r`n"
     $doc += '```' + "`r`n"
     $doc += "`r`n"
     $doc += ($help.Synopsis | Out-String).Trim() + "`r`n"
@@ -327,7 +347,7 @@ $srcdoc = Get-Content $TemplateFile
 $callback = {
     ConvertCommandHelp (Get-Help $args[0].Groups[1].Value)
 }
-$re = [Regex]"{%\s*([\w\-]+)\s*%}"
+$re = [Regex]"{%\s*(.*?)\s*%}"
 
 # Generate the readme
 $readme = $srcdoc | foreach { $re.Replace($_, $callback) }
