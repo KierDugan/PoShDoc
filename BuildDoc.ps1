@@ -329,6 +329,21 @@ function ConvertCommandHelp($help) {
         $doc += "`r`n"
     }
 
+    # Add examples
+    if ($help.examples) {
+        for ($i = 0; $i -lt $help.examples.example.Length; ++$i) {
+            $example = $help.examples.example[$i]
+
+            $doc += "`r`n"
+            $doc += "### Example $($i + 1)`r`n"
+            $doc += '```' + "`r`n"
+            $doc += ($example.code | Out-String).Trim() + "`r`n"
+            $doc += '```' + "`r`n"
+            $doc += "`r`n"
+            $doc += ($example.remarks | Out-String).Trim() + "`r`n"
+        }
+    }
+
     return $doc
 }
 
