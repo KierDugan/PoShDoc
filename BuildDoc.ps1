@@ -1,8 +1,8 @@
-##
-## PoShDoc: Simply PowerShell module README documentation generator
-## URL: https://github.com/DuFace/PoShDoc
-## Copyright (c) 2014-2015 Kier Dugan
-##
+#
+# PoShDoc: Simple PowerShell module README documentation generator
+# URL: https://github.com/KierDugan/PoShDoc
+# Copyright (c) 2014-2022 Kier Dugan
+#
 
 <#
 .SYNOPSIS
@@ -45,7 +45,7 @@ List of module files (*.psm1) to import.
 
 .LINK
 
-https://github.com/DuFace/PoShDoc
+https://github.com/KierDugan/PoShDoc
 #>
 [CmdletBinding(PositionalBinding=$false)]
 param(
@@ -66,7 +66,7 @@ param(
 )
 
 
-## Table Descriptors -----------------------------------------------------------
+# Table Descriptors ------------------------------------------------------------
 function HeaderCell {
     [CmdletBinding()]
     param(
@@ -147,7 +147,7 @@ function Row {
     }
 }
 
-function Describe-Table {
+function DescribeTable {
     [CmdletBinding()]
     param(
         [Parameter(Position=0, Mandatory=$true)]
@@ -160,7 +160,7 @@ function Describe-Table {
         $rows  = @()
 
         # Build the table
-        &$Content | foreach {
+        &$Content | ForEach-Object {
             $row = $_
             switch ($row.Type) {
                 "Header" {
@@ -183,12 +183,12 @@ function Describe-Table {
 }
 
 
-## Table Builder Functions -----------------------------------------------------
+# Table Builder Functions ------------------------------------------------------
 function ColumnCharWidths($table) {
     # Calculate the maximum length of the cell in each row of the data
     $lengths = for ($i = 0; $i -lt $table.Columns.Length; $i++) {
-        ($table.Rows | foreach { $_[$i].Length } |
-            Measure-Object -Maximum).Maximum
+        ($table.Rows | ForEach-Object { $_[$i].Length } `
+                     | Measure-Object -Maximum).Maximum
     }
 
     # Factor in the headings
@@ -221,7 +221,7 @@ function MakeRow($cells, $widths) {
     return "| $($formattedCells -join ' | ') |"
 }
 
-function Format-MarkdownTable {
+function FormatMarkdownTable {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
@@ -235,7 +235,9 @@ function Format-MarkdownTable {
         $lengths = ColumnCharWidths $table
 
         # Add the header row
-        $mdtable += MakeRow ($table.Columns | foreach { $_.Name }) $lengths
+        $mdtable += MakeRow `
+            ($table.Columns | ForEach-Object { $_.Name }) `
+            $lengths
 
         # Add the delimeter row
         $delims = for ($i = 0; $i -lt $table.Columns.Length; $i++) {
@@ -253,7 +255,7 @@ function Format-MarkdownTable {
 }
 
 
-## Get-Help Parsers ------------------------------------------------------------
+# Get-Help Parsers -------------------------------------------------------------
 
 function ConvertCommandHelp($help) {
     $doc = ""
@@ -294,7 +296,7 @@ function ConvertCommandHelp($help) {
     $doc += ($help.description | Out-String).Trim() + "`r`n"
 
     # Add parameters
-    $paramTable = Describe-Table {
+    $paramTable = DescribeTable {
         Header {
             HeaderCell "Parameter"
             HeaderCell "Type" -Centre
@@ -312,8 +314,7 @@ function ConvertCommandHelp($help) {
 
             if ($paramDesc) {
                 # Sanitise the description
-                $paramDesc = ($paramDesc -split "`r?`n" |
-                              foreach { $_.Trim() }) -join ' '
+                $paramDesc = ($paramDesc -split "`r?`n" | ForEach-Object { $_.Trim() }) -join ' '
 
                 Row {
                     Cell $paramName
@@ -325,7 +326,7 @@ function ConvertCommandHelp($help) {
     }
     if ($paramTable.Rows.Length) {
         $doc += "`r`n### Parameters`r`n"
-        $doc += (Format-MarkdownTable $paramTable) -join "`r`n"
+        $doc += (FormatMarkdownTable $paramTable) -join "`r`n"
         $doc += "`r`n"
     }
 
@@ -348,7 +349,7 @@ function ConvertCommandHelp($help) {
 }
 
 
-## Actual documentation generator ----------------------------------------------
+# Actual documentation generator -----------------------------------------------
 
 # Import all the modules to document
 foreach ($mod in $Modules) {
@@ -371,7 +372,7 @@ $callback = {
 $re = [Regex]"\\?{%\s*(.*?)\s*%}"
 
 # Generate the readme
-$readme = $srcdoc | foreach { $re.Replace($_, $callback) }
+$readme = $srcdoc | ForEach-Object { $re.Replace($_, $callback) }
 
 # Output to the appropriate stream
 if ($OutputFile) {
